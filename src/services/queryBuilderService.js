@@ -73,10 +73,11 @@ const generatedColumnFunctions = {
         param = getParam(1, generated_column.params)
         qb.column(knex.raw('DATE_PART(?, TIMESTAMP '+(typeof(param) == "string" ? '??' : '?')+') AS ??', [getParam(0, generated_column.params), param, generated_column.name]))
     },
-    MAX: (qb, generated_column) => {qb.max(getParam(0, generated_column.params), {as: generated_column.name})}, //En estos validar que sean columnas y no params
-    MIN: (qb, generated_column) => {qb.min(getParam(0, generated_column.params), {as: generated_column.name})},
-    SUM: (qb, generated_column) => {qb.sum(getParam(0, generated_column.params), {as: generated_column.name})},
-    AVG: (qb, generated_column) => {qb.avg(getParam(0, generated_column.params), {as: generated_column.name})}
+    COUNT: (qb, generated_column) => {qb.column(knex.raw('COUNT(??) AS "??"', [getParam(0, generated_column.params), knex.raw(generated_column.name)]))},
+    MAX: (qb, generated_column) => {qb.column(knex.raw('MAX(??) AS "??"', [getParam(0, generated_column.params), knex.raw(generated_column.name)]))},
+    MIN: (qb, generated_column) => {qb.column(knex.raw('MIN(??) AS "??"', [getParam(0, generated_column.params), knex.raw(generated_column.name)]))},
+    SUM: (qb, generated_column) => {qb.column(knex.raw('SUM(??) AS "??"', [getParam(0, generated_column.params), knex.raw(generated_column.name)]))},
+    AVG: (qb, generated_column) => {qb.column(knex.raw('AVG(??) AS "??"', [getParam(0, generated_column.params), knex.raw(generated_column.name)]))},
 }
 
 function getSelect(qb, columns, columnsGroupBy) {
@@ -142,13 +143,17 @@ function recursiveFilters(builder, filters) {
     })
 }
 
-function getParam(idx, filterParams) {
+function getParam(idx, filterParams, as) {
     var param = filterParams[idx]
     if (param.type == "COLUMN") {
         var name = ""
         if (param.table_column.alias) {
             if (param.table_column.column_alias) {
-                name = knex.raw(`"${param.table_column.alias}"."??"`, [knex.raw(param.table_column.column_name)])
+                if (as) {
+                    name = knex.raw(`"${param.table_column.alias}"."??" as "??"`, [knex.raw(param.table_column.column_name), knex.raw(as)])
+                } else {
+                    name = knex.raw(`"${param.table_column.alias}"."??"`, [knex.raw(param.table_column.column_name)])
+                }
             } else {
                 name += `${param.table_column.alias}.${param.table_column.column_name}`
             }
